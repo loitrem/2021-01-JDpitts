@@ -16,7 +16,7 @@ SELECT * FROM payments WHERE paymentDate >= '2005-01-01' ORDER BY amount ASC;
 SELECT e.lastName, e.firstName, e.email, e.jobTitle FROM employees AS e JOIN offices AS o ON e.officeCode = o.officeCode WHERE o.city = "San Francisco" ORDER BY e.lastName;
 
 --shows name, product line, scale, and vendor fo all car products vintage and classic. displays all vintage and classic and sorted by name
-SELECT productName, productLine, productScale, productVendor FROM products GROUP BY productName ASC HAVING productLine = "Vintage Cars" or productLine = "Classic Cars";
+SELECT productName, productLine, productScale, productVendor FROM products WHERE productLine IN ('Vintage Cars', 'Classic Cars') GROUP BY productName ASC;
 
 --Joins and Grouping
 
