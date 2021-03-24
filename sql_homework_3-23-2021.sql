@@ -27,7 +27,7 @@ SELECT c.customerName AS "Customer Name" , concat(e.lastName, ', ', e.firstName)
 SELECT p.productName AS 'Product Name', (SELECT sum(quantityOrdered)) AS 'Total # Ordered', (SELECT sum(quantityOrdered * priceEach)) AS 'Total Sale'
 FROM products AS p JOIN orderdetails AS o ON p.productCode = o.productCode 
 GROUP BY p.productname
-order BY sum(quantityOrdered * priceEach) desc;
+order BY 3 desc;
 
 --shows order status and number of each orders with that status
 SELECT DISTINCT STATUS AS 'Order Status', COUNT(*) AS '# Orders' FROM orders GROUP BY status;
@@ -38,11 +38,52 @@ FROM products AS p JOIN orderdetails AS o ON p.productCode = o.productCode
 group BY p.productLine
 ORDER BY sum(o.quantityOrdered) desc;
 
---shows each sales rep their total orders and the total amount of those orders -- not done
-SELECT concat(e.lastName, ', ', e.firstName) AS 'Sales rep', 
-(select COUNT(distinct o.customerNumber) WHERE c.salesRepEmployeeNumber = e.employeeNumber AND o.customerNumber = c.customerNumber) AS 'Total # Ordered', 
-(select sum(distinct od.quantityOrdered * od.priceEach) WHERE od.orderNumber = o.orderNumber AND o.customerNumber = c.customerNumber) AS 'Total Sale' 
-FROM employees AS e JOIN (orders AS o , customers AS c, orderdetails AS od) ON (c.customerNumber = o.customerNumber AND c.salesRepEmployeeNumber = e.employeeNumber AND o.orderNumber = od.orderNumber)
-WHERE e.jobTitle = 'Sales Rep'
-GROUP BY concat(e.lastName, ', ', e.firstName)
-ORDER BY sum(od.quantityOrdered * od.priceEach) DESC;
+--shows each sales rep their total orders and the total amount of those orders 
+SELECT concat(e.lastName, ', ', e.firstName) AS 'Sales rep', COUNT(distinct o.customerNumber) AS 'Total # Ordered', 
+coalesce( sum(distinct od.quantityOrdered * od.priceEach) , 0) AS 'Total Sale' 
+FROM employees AS e 
+LEFT JOIN customers c ON e.employeeNumber = c.salesRepEmployeeNumber 
+LEFT JOIN orders o ON o.customerNumber = c.customerNumber 
+LEFT JOIN orderdetails od ON o.orderNumber = od.orderNumber
+WHERE e.jobTitle = "Sales Rep"
+GROUP BY e.employeeNumber
+ORDER BY 3 DESC;
+
+--shows the month, year and total sales for that month
+SELECT DATE_FORMAT(paymentDate, '%M') AS 'Month', DATE_FORMAT(paymentDate, '%Y') AS 'Year', FORMAT(SUM(amount), 2) AS 'Payments Recieved'
+FROM payments
+GROUP BY 1, 2 ORDER BY 2 ASC, 1 ASC;
+
+-- Banking Queries
+
+-- shows product name and product type
+SELECT NAME AS 'Product', product_type_cd AS 'Type'
+FROM product
+GROUP BY 1;
+
+-- shows branch name and city along with employees last name and job title for each branch
+SELECT b.name AS 'Branch Name', b.city AS 'Branch City', e.last_name AS 'Employee Last Name', e.title AS 'Employee Title'
+FROM branch AS b JOIN employee AS e ON b.branch_id = e.assigned_branch_id
+ORDER BY b.name;
+
+-- shows a list of each unique employee title
+SELECT DISTINCT title FROM employee;
+
+-- shows last name and title of each employee and the last namea nd title of their boss
+SELECT e.last_name AS 'Employee Last name', e.title AS 'Employee Title', m.last_name AS 'Boss Last Name', m.title AS 'Boss Title'
+FROM employee AS e JOIN employee AS m ON e.superior_emp_id = m.emp_id
+ORDER BY e.last_name;
+
+-- shows name of account's product, available balance, and customer's last name
+SELECT p.name AS 'Product Name', a.avail_balance AS 'Available Balance', i.last_name AS 'Customer Last Name'
+FROM account AS a
+JOIN product AS p ON a.product_cd = p.product_cd
+JOIN individual AS i ON i.cust_id = a.cust_id
+ORDER BY p.name;
+
+-- shows all account transaction details for individual customers whose last name starts with 'T'.
+SELECT i.last_name, ac.amount, ac.funds_avail_date, ac.txn_date, ac.txn_type_cd
+FROM acc_transaction AS ac
+JOIN account AS a ON a.account_id = ac.account_id
+JOIN individual AS i ON a.cust_id = i.cust_id
+WHERE i.last_name LIKE 't%';
